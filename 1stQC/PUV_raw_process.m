@@ -1,4 +1,6 @@
 % PRE-PROCESS VECTOR DATA
+%
+%
 % Load Nortek Vector files
 % Account for timedrift, battery failure, beginning of deployment & inspection
 % removing bad data (minCorr < 70%)
@@ -8,18 +10,23 @@
 %       time (datetime)
 %       fs (Sampling Frequency Hz)
 %       P (Pressure dBar)
-%       U (rotated U +x WEST)
-%       V (rotate V +y NORTH)
-%       W (+z up)
-%       Vel.U & Vel.V (XYZ coordinate velocities : +x crosshore, onshore, +y alongshore, south)
+%       BuoyCoord.U (rotated U +x WEST)
+%       BuoyCoord.V (rotate V +y NORTH)
+%       BuoyCoord.W (+z up)
+%       InstrCoord.U & InstrCoord.V (XYZ coordinate velocities : +x crosshore, onshore, +y alongshore, south)
+%       T (Temperature degC)
 %       LATLON ([LAT LON])
 %       rotation.sensor (clockwise angle from magnetic north or direction of probe 1, X)
 %       rotation.mag (clockwise angle of magnetic north from true north, calculated at the beginning of deployment)
-%       inttime.start / inttime.end (start & end times of data segments, NaN's inbetween, datetime)
 %
-
+%
+% CAUTION: work still TBD for input beginning & inspection times -
+%           currently values hard coded
+%
+%
+%
 %%
-function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdrift)%,inspec_id)
+function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdrift)
     
     %% ----------------- GEOGRAPHICAL INFO -----------------
 
@@ -43,12 +50,9 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         eval(['date(ii,:) = [SEN' id '(1,3) SEN' id '(1,1:2) SEN' id '(1,4:6)]'])
         eval(['date_end(ii,:) = [SEN' id '(end,3) SEN' id '(end,1:2) SEN' id '(end,4:6)]'])
     end
-    
-    
-    
-    
+
     %% ----------------- Time drift -----------------
-    % find the sampling rate from hdr file (NEED TO ADD 1Hz option in step above)
+    % find the sampling rate from hdr file
     fid=fopen(sprintf('%s/%s%s.hdr',directory,depstr,'1')); 
     linenum = 12;
     C = split(string(textscan(fid,'%s',1,'delimiter','\n', 'headerlines',linenum-1)));
@@ -63,9 +67,11 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     totalseconds = seconds(time(caldiff([datetime(date(1,:), 'InputFormat', 'YYYYMMDDHHmmSS') datetime(date_end(end,:), 'InputFormat', 'YYYYMMDDHHmmSS')+ seconds(1/fs)], 'Time')))
     % create linspace that is length of deployment, and starts at 0 to the drifttime
     driftfix = linspace(seconds(0), seconds(clockdrift), totalseconds*fs+1);
+    
    %% ----------------- Save original data to netcdf -----------------
     save_raw_data_netcdf
-    %% ----------------- Find beginning of intermintent data recording -----------------
+    
+    %% ----------------- Find beginning of intermittent data recording -----------------
     % Assuming a 2Hz sampling scheme - SEN file should have a value
     % recorded every second. If the difference between neighbooring values >
     % 1s, then that is where the data is truncated to.
@@ -87,7 +93,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         
         if ~isempty(cutoff)
             sprintf('Stopping timeseries at %s', id)
-            return
+            break
         end
     end
 
@@ -166,21 +172,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % P should have dips to 0 (at surface), at the beginning of the
     % deployment and during any inspections. Look at the excel sheet to
     % check where there should be confirmed dips, and replace with NaNs. 
-
-%     figure(1);clf;
-%     subplot(221)
-%     plot(DAT(:,15));
-%     title('P')
-%     subplot(222)
-%     plot(SEN(:,11));
-%     title('Heading')
-%     subplot(223)
-%     plot(SEN(:,12));
-%     title('Pitch')
-%     subplot(224)
-%     plot(SEN(:,13));
-%     title('Roll')
-%     
+  
     depl_start_id = 223649;
     inspe_start_id = 13123100;%13345000;
     inspe_end_id = 13126300;%13345600;
@@ -200,20 +192,6 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     full_date(inspec_id(1,1):inspec_id(1,2))=[];
     DAT(inspec_id(1,1):inspec_id(1,2),:)=[];
     SEN(inspec_id(1,1):inspec_id(1,2),:)=[]; 
-    
-    figure(2);clf;
-    subplot(221)
-    plot(DAT(:,15));
-    title('P')
-    subplot(222)
-    plot(SEN(:,11));
-    title('Heading')
-    subplot(223)
-    plot(SEN(:,12));
-    title('Pitch')
-    subplot(224)
-    plot(SEN(:,13));
-    title('Roll')
     
     %% ----------------- Remove all values with minCorr < 70% -----------------
     bad_data = find(min(DAT(:,[12:14]),[],2) < 70);
@@ -279,7 +257,6 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
    
 
     % NOW: +x is WEST, +y is NORTH
-    %%
     
     %% SAVE VARIABLES
 
@@ -315,5 +292,6 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     
 
     save([filename '_processed'], 'PUV')
-    save_raw_data_netcdf
+    save_initial_processingPUV_netcdf
+    
 end
