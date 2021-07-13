@@ -1,7 +1,7 @@
 %% Rotate to shorenormal coordinates
 %
 % From a buoy coordinate system (WNU), pulling shorenormal angle from CDIP,
-% rotating to onshore, shorenormal (+x) and alongshore, south (+y)
+% rotating to onshore, shorenormal (+x) and alongshore, north (+y) [Right-handed coordinate system]
 %
 % Input: MOP: double
 %        U,V: velocities in buoy coordinates [1 x time] 
@@ -21,7 +21,7 @@ rot_mat   = [cos(alpha_rad)  sin(alpha_rad);
 
 uv=rot_mat*[U';V'];
 Uprime=uv(1,:).'; 
-Vprime=uv(2,:).';
+Vprime=-uv(2,:).';
 
 
 end
