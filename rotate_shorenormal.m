@@ -6,7 +6,9 @@
 % Input: MOP: double
 %        U,V: velocities in buoy coordinates [1 x time] 
 %
-
+% Author: 
+% Athina Lange, SIO July 2021
+%
 
 function [Uprime, Vprime, shorenormal] = rotate_shorenormal(MOP, U, V);
 
