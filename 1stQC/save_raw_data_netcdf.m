@@ -1,5 +1,9 @@
 %% SAVEING RAW DATA TO NETCDF - LOOPS THROUGH ALL 'SETS' OF DATA FOUND IN FOLDER
-
+%
+%
+%
+% Author: 
+% Athina Lange, SIO July 2021
 
 for ii = 1:length(filenames)
     eval(['DAT = DAT' char(string(ii)) ';']);
