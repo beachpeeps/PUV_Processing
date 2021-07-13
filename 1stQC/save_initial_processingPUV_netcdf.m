@@ -1,4 +1,9 @@
 %% SAVE PUV DATA TO NETCDF AFTER INITIAL QC
+%
+%
+%
+% Author: 
+% Athina Lange, SIO July 2021
 
 newfilename = [filename '_processed.nc'];
 
