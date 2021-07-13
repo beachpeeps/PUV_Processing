@@ -24,6 +24,8 @@
 %           currently values hard coded
 %
 %
+% Author: 
+% Athina Lange, SIO July 2021
 %
 %%
 function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdrift)
