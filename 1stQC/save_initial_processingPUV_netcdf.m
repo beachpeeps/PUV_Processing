@@ -1,13 +1,10 @@
 %% SAVE PUV DATA TO NETCDF AFTER INITIAL QC
-%
-%
-%
 % Author: 
 % Athina Lange, SIO July 2021
 
 newfilename = [filename '_processed.nc'];
 
-t = datenum(PUV.time)-datenum(2000,1,1);
+t = datenum(PUV.time)-datenum(1970,1,1);
 
 
 % set up netcdf
@@ -55,7 +52,7 @@ netcdf.putVar(ncid,V_xy_ID,PUV.InstrCoord.V);
 netcdf.putVar(ncid,T_ID,PUV.T);
 netcdf.close(ncid);
 
-ncwriteatt(newfilename, 'time', 'units', 'days since 2000-01-01 00:00:00');
+ncwriteatt(newfilename, 'time', 'units', 'days since 1970-01-01 00:00:00');
 ncwriteatt(newfilename, 'time', 'long_name', 'julian day (UT)');
 ncwriteatt(newfilename, 'time', 'conventions', 'relative julian days with decimal part (as parts of the day )');
 ncwriteatt(newfilename, 'time', 'calendar', 'standard');
@@ -76,7 +73,7 @@ ncwriteatt(newfilename, 'P', 'QC', 'Beginning of deployment, Inspection, and Bat
 
 ncwriteatt(newfilename, 'U', 'units', 'm s-1');
 ncwriteatt(newfilename, 'U', 'axis', 'X_rotated');
-ncwriteatt(newfilename, 'U', 'positive', 'WEST');
+ncwriteatt(newfilename, 'U', 'positive', 'EAST');
 ncwriteatt(newfilename, 'U', 'QC', 'Beginning of deployment, Inspection, and Battery depletion times removed; min(Corr)> 70%;');
 ncwriteatt(newfilename, 'V', 'units', 'm s-1');
 ncwriteatt(newfilename, 'V', 'axis', 'Y_rotated');

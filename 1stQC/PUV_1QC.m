@@ -6,13 +6,13 @@
 %           currently values hard coded
 %
 %
-% Author: 
+%% Author: 
 % Athina Lange, SIO July 2021
 
 tic
-
 % input directory where data is - one deloyment per folder
-directory = '/Volumes/Lange_SIO/Ch2_IG/DATA/By instrument/NortekVector/2019-2020_TorreyPinesMOP582_10meter'
+%directory = '/Volumes/Lange_SIO/Ch2_IG/DATA/By instrument/NortekVector/2019-2020_TorreyPinesMOP582_10meter'
+directory = '/Users/athinalange/Desktop/IG_BC_remote_work/2019-2020_TorreyPinesMOP582_10meter/DATA'
 filename = 'Torrey_1920_582_10'
 
 %% From fieldwork excel sheet:

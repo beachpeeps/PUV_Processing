@@ -23,8 +23,7 @@
 % CAUTION: work still TBD for input beginning & inspection times -
 %           currently values hard coded
 %
-%
-% Author: 
+%% Author: 
 % Athina Lange, SIO July 2021
 %
 %%
@@ -186,7 +185,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
               pitch_issue_start_id pitch_issue_end_id];
 
     for ii = size(inspec_id,1):-1:2
-        full_date(inspec_id(ii,1):inspec_id(ii,2))=NaT;
+        %full_date(inspec_id(ii,1):inspec_id(ii,2))=NaT;
         DAT(inspec_id(ii,1):inspec_id(ii,2),:)=NaN;
         SEN(inspec_id(ii,1):inspec_id(ii,2),:)=NaN; 
     end
@@ -198,7 +197,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     %% ----------------- Remove all values with minCorr < 70% -----------------
     bad_data = find(min(DAT(:,[12:14]),[],2) < 70);
 
-    full_date(bad_data) = NaT;
+    %full_date(bad_data) = NaT;
     DAT(bad_data, :) = NaN;
     SEN(bad_data, :) = NaN;
 
@@ -217,7 +216,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % +y alongshore toward the south. 
 
     % Goal is to get velocity values into the coordinate system of MOPS (+x
-    % WEST, +y NORTH). So +x is going to 270deg, but because +x in the
+    % EAST, +y NORTH). So +x is going to 90deg, but because +x in the
     % original POV is the compass heading + magentic declination off of NORTH,
     % subtract that from 270 to get clockwise rotation values (need to flip
     % sign in rotation matrix). 
@@ -225,7 +224,9 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % if sensor upward looking: +z is down
 
     % ALL THIS SHOULD BE CONFIRMED BY COMPARING FC WITH BUOY
-
+    
+    W = -W; V = -V; % back to right-hand coordinate system
+    
 
     [~,~, magDeclination, ~,~] = igrfmagm(0, LAT,LON, decyear(SEN1(1,3),SEN1(1,1),SEN1(1,2)), 13)
 
@@ -244,10 +245,10 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         theta1_mag = rot_angle; % CHECK THAT IT SHOULD BE PULLED DIRECTLY FROM VALUE
         theta1_true = theta1_mag+ magDeclination; % XYZ coordinates at deg true
 
-        rotation = 270 - theta1_true; % +x is WEST, +y is NORTH
+        rotation = 270 + theta1_true; % +x is EAST, +y is NORTH
         alpha_rad = rotation*pi/180; 
-        rot_mat   = [cos(alpha_rad) sin(alpha_rad);
-                 -sin(alpha_rad)  cos(alpha_rad)];
+        rot_mat   = [cos(alpha_rad) -sin(alpha_rad);
+                     sin(alpha_rad)  cos(alpha_rad)];
 
         uv=rot_mat*[U';V'];
         U_true=uv(1,:).';       % this should be in true North coordinates now! 
@@ -258,7 +259,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
 
    
 
-    % NOW: +x is WEST, +y is NORTH
+    % NOW: +x is EAST, +y is NORTH, +z is UP
     
     %% SAVE VARIABLES
 
@@ -267,7 +268,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     PUV.P = P;
     PUV.BuoyCoord.U = U_true;
     PUV.BuoyCoord.V = V_true;
-    PUV.BuoyCoord.W = -W;
+    PUV.BuoyCoord.W = W;
     PUV.InstrCoord.U = U;
     PUV.InstrCoord.V = V;
     PUV.T = T;
