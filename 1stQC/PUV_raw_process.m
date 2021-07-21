@@ -215,17 +215,16 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % Assume ADV beam 1 pointing to shore, coordinate system is +x onshore, and
     % +y alongshore toward the south. 
 
-    % Goal is to get velocity values into the coordinate system of MOPS (+x
-    % EAST, +y NORTH). So +x is going to 90deg, but because +x in the
+    % Goal is to get velocity values into the coordinate system of MOPS 
+    % (+x WEST, +y NORTH). So +x is going to 90deg, but because +x in the
     % original POV is the compass heading + magentic declination off of NORTH,
-    % subtract that from 270 to get clockwise rotation values (need to flip
-    % sign in rotation matrix). 
+    % add to 90deg to get counterclockwise rotation values . 
 
     % if sensor upward looking: +z is down
 
     % ALL THIS SHOULD BE CONFIRMED BY COMPARING FC WITH BUOY
     
-    W = -W; V = -V; % back to right-hand coordinate system
+    W = -W;  %left-hand coordinate system
     
 
     [~,~, magDeclination, ~,~] = igrfmagm(0, LAT,LON, decyear(SEN1(1,3),SEN1(1,1),SEN1(1,2)), 13)
@@ -245,21 +244,21 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         theta1_mag = rot_angle; % CHECK THAT IT SHOULD BE PULLED DIRECTLY FROM VALUE
         theta1_true = theta1_mag+ magDeclination; % XYZ coordinates at deg true
 
-        rotation = 270 + theta1_true; % +x is EAST, +y is NORTH
+        rotation = 270 - theta1_true; % +x is WEST, +y is NORTH
         alpha_rad = rotation*pi/180; 
-        rot_mat   = [cos(alpha_rad) -sin(alpha_rad);
-                     sin(alpha_rad)  cos(alpha_rad)];
+        rot_mat   = [ cos(alpha_rad)  sin(alpha_rad); % Assuming a LH coordinate system -> CW rotation
+                     -sin(alpha_rad) cos(alpha_rad)];
 
         uv=rot_mat*[U';V'];
-        U_true=uv(1,:).';       % this should be in true North coordinates now! 
-        V_true=uv(2,:).';
+        U_true = uv(1,:).';       % this should be in true North coordinates now! 
+        V_true = uv(2,:).'; % flip to get +y NORTH
     elseif C(3) == 'ENU'
         printf('Does a coordinate system rotation need to happen?')
     end
 
    
 
-    % NOW: +x is EAST, +y is NORTH, +z is UP
+    % NOW: +x is WEST, +y is NORTH, +z is UP ==> LH Coordinate System
     
     %% SAVE VARIABLES
 
