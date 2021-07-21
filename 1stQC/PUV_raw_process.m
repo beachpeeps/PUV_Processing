@@ -218,7 +218,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % Goal is to get velocity values into the coordinate system of MOPS 
     % (+x WEST, +y NORTH). So +x is going to 90deg, but because +x in the
     % original POV is the compass heading + magentic declination off of NORTH,
-    % add to 90deg to get counterclockwise rotation values . 
+    % subtract the angle from 270 for a CW rotation values . 
 
     % if sensor upward looking: +z is down
 
