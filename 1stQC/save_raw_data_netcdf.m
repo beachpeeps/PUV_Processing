@@ -1,7 +1,4 @@
 %% SAVEING RAW DATA TO NETCDF - LOOPS THROUGH ALL 'SETS' OF DATA FOUND IN FOLDER
-%
-%
-%
 % Author: 
 % Athina Lange, SIO July 2021
 
@@ -9,7 +6,7 @@ for ii = 1:length(filenames)
     eval(['DAT = DAT' char(string(ii)) ';']);
     eval(['SEN = SEN' char(string(ii)) ';']);
     
-    newfilename = [filename '_raw_' char(string(ii)) '.nc'];
+    newfilename = [filename '_raw_' char(string(ii)) '.nc']
     
     coordsys = 'XYZ'
 
@@ -64,8 +61,6 @@ for ii = 1:length(filenames)
     
     ncwriteatt(newfilename, 'clockdrift', 'long_name', 'Clock drift from excel');
     ncwriteatt(newfilename, 'clockdrift', 'units', 's');
-
-
 
     ncwriteatt(newfilename, 'DAT', 'long_name', 'contents of .dat file');
     ncwriteatt(newfilename, 'DAT', 'Column 1', '1 Burst counter');

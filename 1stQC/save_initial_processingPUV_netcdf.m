@@ -73,7 +73,7 @@ ncwriteatt(newfilename, 'P', 'QC', 'Beginning of deployment, Inspection, and Bat
 
 ncwriteatt(newfilename, 'U', 'units', 'm s-1');
 ncwriteatt(newfilename, 'U', 'axis', 'X_rotated');
-ncwriteatt(newfilename, 'U', 'positive', 'EAST');
+ncwriteatt(newfilename, 'U', 'positive', 'WEST');
 ncwriteatt(newfilename, 'U', 'QC', 'Beginning of deployment, Inspection, and Battery depletion times removed; min(Corr)> 70%;');
 ncwriteatt(newfilename, 'V', 'units', 'm s-1');
 ncwriteatt(newfilename, 'V', 'axis', 'Y_rotated');
