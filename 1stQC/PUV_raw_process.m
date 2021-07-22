@@ -70,7 +70,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     driftfix = linspace(seconds(0), seconds(clockdrift), totalseconds*fs+1);
     
    %% ----------------- Save original data to netcdf -----------------
-    %save_raw_data_netcdf
+    save_raw_data_netcdf
     
     %% ----------------- Find beginning of intermittent data recording -----------------
     % Assuming a 2Hz sampling scheme - SEN file should have a value
