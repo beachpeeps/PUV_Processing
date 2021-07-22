@@ -115,8 +115,8 @@ end
 cax = newplot;
 Rrange = rMax - rMin; % get the range for the radius
 [rNorm] = getRnorm(Rscale,Origin,R,Rrange); % getRnorm is a nested function
-YY = (rNorm)'*cosd(90-theta - XAngle);
-XX = (rNorm)'*sind(90-theta - XAngle);
+YY = (rNorm)'*cosd(90+theta - XAngle);
+XX = (rNorm)'*sind(90+theta - XAngle);
 h = pcolor(XX,YY,Z,'parent',cax);
 % disp([max(R/Rrange),max(rNorm)])
 
@@ -158,8 +158,8 @@ end
         
         %cost = cosd(90-spokeMesh); % the zero angle is aligned with North
         %sint = sind(90-spokeMesh); % the zero angle is aligned with North
-        cost = cosd(-spokeMesh - XAngle); % the zero angle is aligned with Shorenormal
-        sint = -sind(-spokeMesh - XAngle); % the zero angle is aligned with Shorenormal
+        cost = cosd(spokeMesh - XAngle); % the zero angle is aligned with Shorenormal
+        sint = -sind(spokeMesh - XAngle); % the zero angle is aligned with Shorenormal
         for kk = 1:Nspokes
             
             X = cost(kk)*contourD;
