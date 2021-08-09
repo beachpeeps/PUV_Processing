@@ -1,0 +1,156 @@
+clear
+load('temp.mat','PUV_process');
+%%
+for id = 1580%:8
+%id = 376;
+clear fm i_swell FC df g d E3 THETA3 k3 omega kwav theta1 theta2 THETA1 THETA2
+clear cosdt dtheta f_bound E_bound idf omega2 k2 omega1 k1 C D e1 e2
+fm = PUV_process(id).Spec.fm;
+i_swell = PUV_process(id).ids.i_swell;
+
+FC = PUV_process(id).FC;
+df = fm(i_swell(2))-fm(i_swell(1));
+g = 9.81;
+d = PUV_process(id).Eflux.depth;
+% get MEM estimate
+
+clear dd ds
+%compute directional spreding function using MEM estimator
+
+    
+    dd(:,:)= mem_est(FC.a1', FC.a2', FC.b1', FC.b2');
+
+    for i=1:length(fm) % loop through freq bands
+        ds(i,:)=dd(i,:)*PUV_process(id).Spec.SSE(i); % mutiply by the freq band total energy
+    end
+
+% do the bound wave thang
+E3 = zeros(719,360,360);
+THETA3 = E3;
+k3 = E3;
+omega = 2*pi*fm;
+kwav = get_wavenumber(omega,d);
+theta1 = 1:360;
+theta2 = 1:360;     
+[THETA1,THETA2] = meshgrid(theta1,theta2);
+cosdt = cosd(THETA1-THETA2+180);
+dtheta = 1/360;
+f_bound=df*(1:round(0.04/df));
+E_bound = zeros(length(f_bound),1);
+ tic  
+% parfor idf = 8;
+ for idf = 1:round(0.04/df) %index deltaf, 1st loop runs through everything on the df
+   idf %(printout for sanity)
+   parfor ii = i_swell(1):i_swell(end)-1 % for all swell indices, 2nd loop runs through everything on f1, so all combos of df,f1 and f2 = f1+df
+     omega2 = omega(ii+idf); % f2
+     k2 = kwav(ii+idf);
+     omega1 = omega(ii); % f1
+     k1 = kwav(ii);
+     % get direction of bound wave
+     THETA3(ii,:,:) = atand((k2.*sind(THETA2)-k1.*sind(THETA1))./(k2.*cosd(THETA2)-k1.*cosd(THETA1)));
+     % get bound wave wavenumber k
+     k3 = sqrt(k1.^2+k2.^2+2*k1.*k2.*cosdt);
+     %interaction coefficient party time
+    % Rijnsdorp 2014 Eq. B3
+     C = (omega1 - omega2) .* ...
+           ((omega1*omega2)^2/g^2 - k1*k2*cosdt)...
+           - 0.5 * (omega1*k2^2 / (cosh(k2*d)).^2 - omega2.*k1.^2. / (cosh(k1*d)).^2);
+     % Rijnsdorp 2014 Eq. B2     
+     D = (g.*k1.*k2 ./ (2*omega1*omega2))...
+           .* cosdt + ((omega1.^2 - omega1.*omega2 + omega2.^2)./ 2*g)...
+           - C .* g .*(omega1 - omega2) ./ (omega1*omega2) ./ (g.*k3 .* (tanh(k3 .* d) - (omega1 - omega2).^2));  
+     % get energy at f2 and f1
+     e1 = repmat(ds(ii+idf,:),360,1); % E(f2,all-thetas)
+     e2 = repmat(ds(ii,:),360,1); % E(f1,all-thetas) 
+     % get energy at f3, boundwave, need squared values because energy
+     E3(ii,:,:) = D.^2.*e2.*e1;     
+   end
+   %using only 1 dtheta here, because the first summation over all angles
+   %is normalized. I think.
+   E_bound(idf) = 2*sum(E3*dtheta*df,'all');
+ end
+ toc 
+
+Eig(:, id)= E_bound;
+fig(:,id)=f_bound;
+end
+
+%% Only partial angle
+angle = 180
+for id = 1580;
+%id = 376;
+clear fm i_swell FC df g d E3 THETA3 k3 omega kwav theta1 theta2 THETA1 THETA2
+clear cosdt dtheta f_bound E_bound idf omega2 k2 omega1 k1 C D e1 e2
+
+fm = PUV_process(id).Spec.fm;
+i_swell = PUV_process(id).ids.i_swell;
+%i_swell(542:end)=[];
+
+FC = PUV_process(id).FC;
+df = fm(i_swell(2))-fm(i_swell(1));
+g = 9.81;
+d = PUV_process(id).Eflux.depth;
+% get MEM estimate
+
+clear dd ds
+%compute directional spreding function using MEM estimator
+dd(:,:)= mem_est(FC.a1', FC.a2', FC.b1', FC.b2');
+
+    for i=1:length(fm) % loop through freq bands
+        ds(i,:)=dd(i,:)*PUV_process(id).Spec.SSE(i); % mutiply by the freq band total energy
+    end
+ds_temp = circshift(ds, (angle/2 - 1), 2);
+%ds_temp = sum(ds, 2);
+
+% do the bound wave thang
+E3 = zeros(719,angle,angle);
+THETA3 = E3;
+k3 = E3;
+omega = 2*pi*fm;
+kwav = get_wavenumber(omega,d);
+theta1 = -(angle/2 - 1):(angle/2);%1:360;
+theta2 = -(angle/2 - 1):(angle/2);%1:360;     
+[THETA1,THETA2] = meshgrid(theta1,theta2);
+cosdt = cosd(THETA1-THETA2+180);
+
+dtheta = 1/360; %% dtheta ???
+
+f_bound=df*(1:round(0.04/df));
+E_bound = zeros(length(f_bound),1);
+ tic  
+% parfor idf = 8;
+ for idf = 1:round(0.04/df) %index deltaf, 1st loop runs through everything on the df
+   idf %(printout for sanity)
+   for ii = i_swell(1):i_swell(end)-1 % for all swell indices, 2nd loop runs through everything on f1, so all combos of df,f1 and f2 = f1+df
+     omega2 = omega(ii+idf); % f2
+     k2 = kwav(ii+idf);
+     omega1 = omega(ii); % f1
+     k1 = kwav(ii);
+     % get direction of bound wave
+     THETA3(ii,:,:) = atand((k2.*sind(THETA2)-k1.*sind(THETA1))./(k2.*cosd(THETA2)-k1.*cosd(THETA1)));
+     % get bound wave wavenumber k
+     k3 = sqrt(k1.^2+k2.^2+2*k1.*k2.*cosdt);
+     %interaction coefficient party time
+    % Rijnsdorp 2014 Eq. B3
+     C = (omega1 - omega2) .* ...
+           ((omega1*omega2)^2/g^2 - k1*k2*cosdt)...
+           - 0.5 * (omega1*k2^2 / (cosh(k2*d)).^2 - omega2.*k1.^2. / (cosh(k1*d)).^2);
+     % Rijnsdorp 2014 Eq. B2     
+     D = (g.*k1.*k2 ./ (2*omega1*omega2))...
+           .* cosdt + ((omega1.^2 - omega1.*omega2 + omega2.^2)./ 2*g)...
+           - C .* g .*(omega1 - omega2) ./ (omega1*omega2) ./ (g.*k3 .* (tanh(k3 .* d) - (omega1 - omega2).^2));  
+     % get energy at f2 and f1
+     e1 = repmat(ds_temp(ii+idf,1:angle),angle,1); % E(f2,all-thetas)
+     e2 = repmat(ds_temp(ii,1:angle),angle,1); % E(f1,all-thetas) 
+     % get energy at f3, boundwave, need squared values because energy
+     E3(ii,:,:) = D.^2.*e2.*e1;     
+   end
+   %using only 1 dtheta here, because the first summation over all angles
+   %is normalized. I think.
+   E_bound(idf) = 2*sum(E3*dtheta*df,'all');
+ end
+ toc 
+
+Eig_180(:, id)= E_bound;
+fig_180(:,id)=f_bound;
+end
