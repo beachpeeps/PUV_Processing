@@ -1,0 +1,8 @@
+*.mat, *.png, viz/*.png, data/*.nc
+data/Torrey_1920_582_10_raw_9.nc
+data/Torrey_1920_582_10_raw_7.nc
+data/Torrey_1920_582_10_raw_8.nc
+data/Torrey_1920_582_10_raw_5.nc
+*.nc
+*.mat
+*.png

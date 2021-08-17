@@ -6,7 +6,7 @@ for ii = 1:length(filenames)
     eval(['DAT = DAT' char(string(ii)) ';']);
     eval(['SEN = SEN' char(string(ii)) ';']);
     
-    newfilename = [filename '_raw_' char(string(ii)) '.nc']
+    newfilename = [filename '_raw_' char(string(ii)) '.nc'] %should this instead be saving to a different directory?
     
     coordsys = 'XYZ'
 

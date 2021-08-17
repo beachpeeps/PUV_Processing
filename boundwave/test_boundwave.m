@@ -1,5 +1,5 @@
 clear
-load('temp.mat','PUV_process');
+load('../data/temp.mat','PUV_process');
 
 %%
 
@@ -143,6 +143,6 @@ semilogy(f_bound,E_bound1D)
  ylabel('E (m^2/Hz)')
  title(['id = ' num2str(id) ' and not a date because I am lazy']) 
  legend('sum of E(f,theta_{calc})','sum of E(f,theta) TOTAL','2D bound','1D bound')
- saveas(gcf,['test_boundwave_' num2str(id) '.png'])
+ saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
 
 toc
