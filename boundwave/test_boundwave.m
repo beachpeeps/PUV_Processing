@@ -18,7 +18,7 @@ end
 
 
 
-id = 883;
+id = 1111;
 fm = PUV_process(id).Spec.fm;
 i_swell = PUV_process(id).ids.i_swell;
 %%
@@ -36,7 +36,10 @@ clear dd ds
 
     for i=1:length(fm) % loop through freq bands
         ds(i,:)=dd(i,:)*PUV_process(id).Spec.SSE(i); % mutiply by the freq band total energy
-    end
+    end    
+
+% shift dd to work in 'coming from' angle because I am backwards today
+ds = [ds(:,90:end) ds(:,1:89)];
 
 %% do the bound wave thang
 dds = repmat(ds,1,1,360); % double the angles, double the fun
@@ -45,14 +48,15 @@ omega = 2*pi*fm;
 kwav = get_wavenumber(omega,d);
 
 
-theta1 = [1:30 330:360]; theta2 = theta1;
- 
+theta1 = [235:305]; theta2 = theta1; lt = length(theta1);
+%  theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
+
 e1D = PUV_process(id).Spec.SSE(1:length(fm));
 [THETA1,THETA2] = meshgrid(theta1,theta2);
 
-dtheta = pi/180;
+dtheta = 1; %not used
 
-iidf = 1:20:round(0.1/df);
+iidf = 1:10:round(0.1/df);
 f_bound=df*(iidf);
 E_bound = zeros(1,max(iidf));
 
@@ -79,8 +83,8 @@ cosdt = cosd(THETA2-THETA1+180);
        
         %interaction coefficient party time
            %Following Hasselmann 
-        C = 1i*(omega1+omega2) * ( (omega1*omega2).^2 /(g^2) - k1*k2*cosdt )...
-            - 1i*0.5 * ( omega1*k2.^2/(cosh(k2*d).^2) + omega2*k1.^2/(cosh(k1*d).^2) );
+        C = (omega1+omega2) * ( (omega1*omega2).^2 /(g^2) - k1*k2*cosdt )...
+            - 0.5 * ( omega1*k2.^2/(cosh(k2*d).^2) + omega2*k1.^2/(cosh(k1*d).^2) );
         T1 = -g*k1*k2*cosdt ./ (2.*omega1*omega2); % equation 11, first half
         T2 = 1/2/g.*(omega1.^2+omega2^2+omega1.*omega2); %equation 11, 2nd half
         
@@ -88,22 +92,22 @@ cosdt = cosd(THETA2-THETA1+180);
             (( g*k3*tanh(k3*d) - (omega1+omega2).^2 ).*(omega1*omega2));
         
         
-        D = abs(T1+T2+T3*C);    
+        D = T1+T2+T3*C;    
         
 %         1D version (I am too lazy to write good code).
-        cosdt = -1;
+        cosdt1 = -1;
             % get bound wave wavenumber k
-         k3 = sqrt(k1.^2+k2.^2+2*k1.*k2.*cosdt);
-        C = 1i*(omega1+omega2) * ( (omega1*omega2).^2 /(g^2) - k1*k2*cosdt )...
-            - 1i*0.5 * ( omega1*k2.^2/(cosh(k2*d).^2) + omega2*k1.^2/(cosh(k1*d).^2) );
-        T1 = -g*k1*k2*cosdt ./ (2.*omega1*omega2); % equation 11, first half
+         k3 = sqrt(k1.^2+k2.^2+2*k1.*k2.*cosdt1);
+        C = (omega1+omega2) * ( (omega1*omega2).^2 /(g^2) - k1*k2*cosdt1 )...
+            - 0.5 * ( omega1*k2.^2/(cosh(k2*d).^2) + omega2*k1.^2/(cosh(k1*d).^2) );
+        T1 = -g*k1*k2*cosdt1 ./ (2.*omega1*omega2); % equation 11, first half
         T2 = 1/2/g.*(omega1.^2+omega2^2+omega1.*omega2); %equation 11, 2nd half
         
         T3 = g*(omega1+omega2) ./...
             (( g*k3*tanh(k3*d) - (omega1+omega2).^2 ).*(omega1*omega2));
         
         
-        D1D = abs(T1+T2+T3*C); 
+        D1D = T1+T2+T3*C; 
         
      % get energy at f2,theta1 and f1,theta2
      e1 = squeeze(dds(ii+idf,theta1,theta2)); % E(f2,all-thetas)
@@ -114,12 +118,10 @@ cosdt = cosd(THETA2-THETA1+180);
      E31D(ii) = D1D.^2.*e1D(ii).*e1D(ii+idf);
        
      end %swell loop
-       %using only 1 dtheta here, because the first summation over all angles
-       %is normalized. I think.
-       E_bound(idf) = 2*sum(E3(2:end,:,:)*df*dtheta,'all');
+       %adding a 2pi here because i like it better this way
+       E_bound(idf) = 2*(2*pi)*sum(E3*df,'all');
        E_bound1D(idf) = 2*sum(E31D*df,'all');
 
-     clear E3 k3
      
  end % df loop
  toc
@@ -129,20 +131,36 @@ E_bound1D = E_bound1D(iidf);
 %
 %%
 clf
-esector = sum(dds(:,theta2,theta1),[2 3]).*dtheta;
-
+esector = 1/lt.*sum(dds(:,theta2,theta1),[2 3]);
+subplot(1,2,1)
 semilogy(fm,esector)
 hold on
-
 semilogy(fm,sum(ds,2))
 hold on
-semilogy(f_bound,E_bound)
-semilogy(f_bound,E_bound1D)
+semilogy(f_bound,E_bound,'.')
+semilogy(f_bound,E_bound1D,'.')
 
  xlabel('f (Hz)')
  ylabel('E (m^2/Hz)')
- title(['id = ' num2str(id) ' and not a date because I am lazy']) 
+ title(['id = ' num2str(id) ', Hs = ' num2str(Hsig(id),'%2.2f') ' m']) 
  legend('sum of E(f,theta_{calc})','sum of E(f,theta) TOTAL','2D bound','1D bound')
- saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
+ 
+ax2 = subplot(1,2,2);
+% polarPcolor(R,theta,Z,'Ncircles',3)
+
+[h,c] = polarPcolor(fm',0:360,[ds ds(:,end) ],'Nspokes',9,'typeRose','meteo'); shading flat
+hold on
+c.Label.String  = 'E(f,\theta)'; c.Label.FontSize = 12;
+% polarplot(theta1(1)*ones(length(fm)),fm)
+% theta1 = [1:15 345:360];
+dr = ds;
+dr(i_swell,theta1) = 1;
+
+[h2,c2] = polarPcolor(fm',0:360, [dr dr(:,end)],'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
+h2.FaceAlpha = 0.2;
+%  xlabel('f (Hz)')
+%  ylabel('Dir (\circ), 0\circ  = onshore')
+h =  title('E(f,\theta), 270\circ shorenormal'); h.Position(2) = 1.1;
+%  saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
 
 toc
