@@ -9,6 +9,7 @@ for i=1:length(PUV_process)
 try
 Hsig(i) = PUV_process(i).Hsig.Hs;
 fmean(i) = PUV_process(i).ids.fcentroid_swell;
+spread(i) = PUV_process(i).dir.spread2_ss_sum;
 end
 end
 
@@ -18,7 +19,7 @@ end
 
 
 
-id = 795;
+id = 1581;
 fm = PUV_process(id).Spec.fm;
 i_swell = PUV_process(id).ids.i_swell;
 %%
@@ -48,8 +49,8 @@ omega = 2*pi*fm;
 kwav = get_wavenumber(omega,d);
 
 
-theta1 = [200:340]; theta2 = theta1; lt = length(theta1);
-%  theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
+theta1 = [230:310]; theta2 = theta1; lt = length(theta1);
+% theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
 
 e1D = PUV_process(id).Spec.SSE(1:length(fm));
 [THETA1,THETA2] = meshgrid(theta1,theta2);
@@ -119,7 +120,7 @@ cosdt = cosd(THETA2-THETA1+180);
        
      end %swell loop
        %adding a 2pi here because i like it better this way
-       E_bound(idf) = 2*lt/(2*pi)*sum(E3*df*dtheta,'all');
+       E_bound(idf) = 2*2*pi*sum(E3*df*dtheta,'all');
        E_bound1D(idf) = 2*sum(E31D*df,'all');
 
      
@@ -142,21 +143,21 @@ semilogy(f_bound,E_bound1D,'linewidth',2)
 
  xlabel('f (Hz)')
  ylabel('E (m^2/Hz)')
- title(['id = ' num2str(id) ', Hs = ' num2str(Hsig(id),'%2.2f') ' m']) 
+ title(['id = ' num2str(id) ', Hs = ' num2str(Hsig(id),'%2.2f') ' m, spread = ' num2str(spread(id),'%2.2f') '\circ']) 
  legend('sum of E(f,theta_{calc})','sum of E(f,theta) TOTAL','2D bound','1D bound')
  
 ax2 = subplot(1,2,2);
 % polarPcolor(R,theta,Z,'Ncircles',3)
 
-[h,c] = polarPcolor(fm',0:360,log10([ds ds(:,end) ]),'Nspokes',9,'typeRose','meteo'); shading flat
+[h,c] = polarPcolor(fm',0:360,[ds ds(:,end) ],'Nspokes',9,'typeRose','meteo'); shading flat
 hold on
-c.Label.String  = 'log_{10}E(f,\theta)'; c.Label.FontSize = 12;
+c.Label.String  = 'E(f,\theta)'; c.Label.FontSize = 12;
 % polarplot(theta1(1)*ones(length(fm)),fm)
 % theta1 = [1:15 345:360];
 dr = ds;
 dr(i_swell,theta1) = 1;
 
-[h2,c2] = polarPcolor(fm',0:360, log10([dr dr(:,end)]),'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
+[h2,c2] = polarPcolor(fm',0:360, [dr dr(:,end)],'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
 h2.FaceAlpha = 0.2;
 %  xlabel('f (Hz)')
 %  ylabel('Dir (\circ), 0\circ  = onshore')
