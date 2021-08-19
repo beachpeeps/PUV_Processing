@@ -19,7 +19,7 @@ end
 
 
 
-id = 1581;
+id = 1582; %1581;
 fm = PUV_process(id).Spec.fm;
 i_swell = PUV_process(id).ids.i_swell;
 %%
@@ -49,7 +49,7 @@ omega = 2*pi*fm;
 kwav = get_wavenumber(omega,d);
 
 
-theta1 = [230:310]; theta2 = theta1; lt = length(theta1);
+theta1 = [180:360]; theta2= theta1; lt = length(theta1);
 % theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
 
 e1D = PUV_process(id).Spec.SSE(1:length(fm));
@@ -59,7 +59,7 @@ dtheta = 1; %not used
 
 iidf = 1:10:round(0.1/df);
 f_bound=df*(iidf);
-E_bound = zeros(1,max(iidf));
+% E_bound = zeros(1,max(iidf));
 
 %cosine of difference angle
 cosdt = cosd(THETA2-THETA1+180);
@@ -111,16 +111,18 @@ cosdt = cosd(THETA2-THETA1+180);
         D1D = T1+T2+T3*C; 
         
      % get energy at f2,theta1 and f1,theta2
-     e1 = squeeze(dds(ii+idf,theta1,theta2)); % E(f2,all-thetas)
-     e2 = squeeze(dds(ii,theta1,theta2)); % E(f1,all-thetas) 
+%      e1 = squeeze(dds(ii+idf,theta1,theta2)); % E(f2,all-thetas)
+     e1 = ds(ii+idf,theta2);
+%      e2 = squeeze(dds(ii,theta1,theta2)); % E(f1,all-thetas) 
+     e2 = ds(ii,theta1);
      
      % get energy at f3, boundwave, need squared values because energy
-     E3(ii,:,:) = D.^2.*e2.*e1;
+     E3(ii,:,:) = D.^2*e1'*e2;
      E31D(ii) = D1D.^2.*e1D(ii).*e1D(ii+idf);
        
      end %swell loop
        %adding a 2pi here because i like it better this way
-       E_bound(idf) = 2*2*pi*sum(E3*df*dtheta,'all');
+       E_bound(idf) = 2/(2*pi)*sum(E3*df,'all');
        E_bound1D(idf) = 2*sum(E31D*df,'all');
 
      
@@ -165,3 +167,16 @@ h =  title('E(f,\theta), 270\circ shorenormal'); h.Position(2) = 1.1;
  saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
 
 toc
+
+%%
+% for i=1:300
+% %     plot(theta1,squeeze(sum(E_bound(i,:,:),2)))
+% %     hold on
+% %     plot(theta1,squeeze(sum(E_bound(i,:,:),2)))
+% % hold on
+% %     pcolor(theta1,theta2,squeeze(E_bound(i,:,:))); shading flat
+% pcolor(squeeze(dds(i,:,:))); shading flat
+%     pause(0.1)
+% end
+
+    
