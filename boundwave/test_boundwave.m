@@ -18,7 +18,7 @@ end
 
 
 
-id = 1111;
+id = 795;
 fm = PUV_process(id).Spec.fm;
 i_swell = PUV_process(id).ids.i_swell;
 %%
@@ -48,7 +48,7 @@ omega = 2*pi*fm;
 kwav = get_wavenumber(omega,d);
 
 
-theta1 = [235:305]; theta2 = theta1; lt = length(theta1);
+theta1 = [200:340]; theta2 = theta1; lt = length(theta1);
 %  theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
 
 e1D = PUV_process(id).Spec.SSE(1:length(fm));
@@ -119,7 +119,7 @@ cosdt = cosd(THETA2-THETA1+180);
        
      end %swell loop
        %adding a 2pi here because i like it better this way
-       E_bound(idf) = 2*(2*pi)*sum(E3*df,'all');
+       E_bound(idf) = 2*lt/(2*pi)*sum(E3*df*dtheta,'all');
        E_bound1D(idf) = 2*sum(E31D*df,'all');
 
      
@@ -130,15 +130,15 @@ E_bound = E_bound(iidf);
 E_bound1D = E_bound1D(iidf);
 %
 %%
-clf
+% clf
 esector = 1/lt.*sum(dds(:,theta2,theta1),[2 3]);
 subplot(1,2,1)
 semilogy(fm,esector)
 hold on
 semilogy(fm,sum(ds,2))
 hold on
-semilogy(f_bound,E_bound,'.')
-semilogy(f_bound,E_bound1D,'.')
+semilogy(f_bound,E_bound,'linewidth',2)
+semilogy(f_bound,E_bound1D,'linewidth',2)
 
  xlabel('f (Hz)')
  ylabel('E (m^2/Hz)')
@@ -148,19 +148,19 @@ semilogy(f_bound,E_bound1D,'.')
 ax2 = subplot(1,2,2);
 % polarPcolor(R,theta,Z,'Ncircles',3)
 
-[h,c] = polarPcolor(fm',0:360,[ds ds(:,end) ],'Nspokes',9,'typeRose','meteo'); shading flat
+[h,c] = polarPcolor(fm',0:360,log10([ds ds(:,end) ]),'Nspokes',9,'typeRose','meteo'); shading flat
 hold on
-c.Label.String  = 'E(f,\theta)'; c.Label.FontSize = 12;
+c.Label.String  = 'log_{10}E(f,\theta)'; c.Label.FontSize = 12;
 % polarplot(theta1(1)*ones(length(fm)),fm)
 % theta1 = [1:15 345:360];
 dr = ds;
 dr(i_swell,theta1) = 1;
 
-[h2,c2] = polarPcolor(fm',0:360, [dr dr(:,end)],'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
+[h2,c2] = polarPcolor(fm',0:360, log10([dr dr(:,end)]),'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
 h2.FaceAlpha = 0.2;
 %  xlabel('f (Hz)')
 %  ylabel('Dir (\circ), 0\circ  = onshore')
 h =  title('E(f,\theta), 270\circ shorenormal'); h.Position(2) = 1.1;
-%  saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
+ saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
 
 toc
