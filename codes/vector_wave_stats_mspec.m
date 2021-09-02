@@ -1,5 +1,5 @@
 function [A] = vector_wave_stats_mspec(U,V,P, doffp, doffu)
-addpath jlab
+% addpath jlab
 
 
 depth = nanmean(P) + doffp;  % This is the hourly averaged water depth

@@ -1,92 +1,106 @@
-%% 
+% %% 
+% 
+% %% Initial QC
+% % PUV_1QC
+% load Torrey_1920_582_10_processed.mat
+% %% Rotate to shorenormal coordinates
+% [PUV.ShorenormalCoord.U, PUV.ShorenormalCoord.V, shorenormal] = rotate_shorenormal(PUV.BuoyCoord.U, PUV.BuoyCoord.V);
+% 
+% %%
+% tic
+% % 66cm sand to top of pressure port on deployment. 78cm on recovery. 
+% doffp = 0.72; % splitting the difference between the two
+%     doffu = doffp+0.371; %adding 37.1 cm to u,v sample point
+% 
+%     PUV_work = PUV;
+% 
+% %% Interp NaNs if less than 2sec gap
+% PUV_work.P = fillmissing(PUV.P,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.BuoyCoord.U = fillmissing(PUV.BuoyCoord.U,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.BuoyCoord.V = fillmissing(PUV.BuoyCoord.V,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.BuoyCoord.W = fillmissing(PUV.BuoyCoord.W,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.ShorenormalCoord.U = fillmissing(PUV.ShorenormalCoord.U,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.ShorenormalCoord.V = fillmissing(PUV.ShorenormalCoord.V,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% PUV_work.T = fillmissing(PUV.T,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
+% toc
+% %% Split data into hour segments
+% hourlen = (60*60*PUV_work.fs)
+% segtotal = floor(length(PUV_work.time)/hourlen)
+% PUV_work.time(segtotal*hourlen+1:end)=[];
+% PUV_work.P(segtotal*hourlen+1:end)=[];
+% PUV_work.BuoyCoord.U(segtotal*hourlen+1:end)=[];
+% PUV_work.BuoyCoord.V(segtotal*hourlen+1:end)=[];
+% PUV_work.BuoyCoord.W(segtotal*hourlen+1:end)=[];
+% PUV_work.ShorenormalCoord.U(segtotal*hourlen+1:end)=[];
+% PUV_work.ShorenormalCoord.V(segtotal*hourlen+1:end)=[];
+% 
+% PUV_work.time = reshape(PUV_work.time, hourlen, segtotal);
+% PUV_work.P = reshape(PUV_work.P, hourlen, segtotal);
+% PUV_work.BuoyCoord.U = reshape(PUV_work.BuoyCoord.U, hourlen, segtotal);
+% PUV_work.BuoyCoord.V = reshape(PUV_work.BuoyCoord.V, hourlen, segtotal);
+% PUV_work.BuoyCoord.W = reshape(PUV_work.BuoyCoord.W, hourlen, segtotal);
+% 
+% PUV_work.ShorenormalCoord.U = reshape(PUV_work.ShorenormalCoord.U, hourlen, segtotal);
+% PUV_work.ShorenormalCoord.V = reshape(PUV_work.ShorenormalCoord.V, hourlen, segtotal);
+% 
+% P = PUV_work.P;
+% U = PUV_work.BuoyCoord.U;
+% V = PUV_work.BuoyCoord.V;
+% W = PUV_work.BuoyCoord.W;
+% fs = PUV_work.fs;
+% time = PUV_work.time;
+% toc
+% %% Get tides to check
+% disp('Getting tides for a sanity check')
+% datum = 'NAVD';
+% station =  '9410230'; % La Jolla
+% [tide_t_verified,tide_t_predicted,tide_z_verified,tide_z_predicted,tideInfo] = getNOAAtide(time(1,1),time(end,end),station,datum);
+% % A1=split(importdata('Nov.txt', ' '));
+% % A2=split(importdata('Dec.txt', ' '));
+% % A3=split(importdata('Jan.txt', ' '));
+% % A4=split(importdata('Feb.txt', ' '));
+% % A5=split(importdata('Mar.txt', ' '));
+% % 
+% % tide_time = [datetime(A1(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A1(2:end,3), 'InputFormat', 'HH:mm'));...
+% % 	datetime(A2(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A2(2:end,3), 'InputFormat', 'HH:mm'));...
+% % 	datetime(A3(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A3(2:end,3), 'InputFormat', 'HH:mm'));...
+% % 	datetime(A4(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A4(2:end,3), 'InputFormat', 'HH:mm'));...
+% % 	datetime(A5(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A5(2:end,3), 'InputFormat', 'HH:mm'))];
+% % 
+% % tide = [str2num(char(A1(2:end,4)));...
+% %     str2num(char(A2(2:end,4)));...
+% %     str2num(char(A3(2:end,4)));...
+% %     str2num(char(A4(2:end,4)));...
+% %     str2num(char(A5(2:end,4)))];
+% 
+% %% Get useable values
+% disp('Getting wave stats, writing to PUV_process_ENU')
+% tic
+% Uprime = PUV_work.BuoyCoord.U;
+% Vprime = PUV_work.BuoyCoord.V;
+% for ii = 1:segtotal
+%     if isempty(find(isnan(P(:,ii))))
+%         [PUV_process_ENU(ii)] = vector_wave_stats_mspec(Uprime(:,ii), Vprime(:,ii), P(:,ii), doffp, doffu);
+%     end
+% end
+% toc 
+% %%
+% disp('Getting wave stats, writing to PUV_process')
+% tic
+% Uprime = PUV_work.ShorenormalCoord.U;
+% Vprime = PUV_work.ShorenormalCoord.V;
+% for ii = 1866:segtotal
+%     if isempty(find(isnan(P(:,ii))))
+%         [PUV_process(ii)] = vector_wave_stats_mspec(Uprime(:,ii), Vprime(:,ii), P(:,ii), doffp, doffu);
+%     end
+% end
+% toc
 
-%% Initial QC
-PUV_1QC
-%% Rotate to shorenormal coordinates
-[PUV.ShorenormalCoord.U, PUV.ShorenormalCoord.V, shorenormal] = rotate_shorenormal(PUV.BuoyCoord.U, PUV.BuoyCoord.V)
+%% load variables up to this point
+load temp
 
-%%
-tic
-% 66cm sand to top of pressure port on deployment. 78cm on recovery. 
-doffp = 0.72; % splitting the difference between the two
-    doffu = doffp+0.371; %adding 37.1 cm to u,v sample point
-
-    PUV_work = PUV;
-
-%% Interp NaNs if less than 2sec gap
-PUV_work.P = fillmissing(PUV.P,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.BuoyCoord.U = fillmissing(PUV.BuoyCoord.U,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.BuoyCoord.V = fillmissing(PUV.BuoyCoord.V,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.BuoyCoord.W = fillmissing(PUV.BuoyCoord.W,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.ShorenormalCoord.U = fillmissing(PUV.ShorenormalCoord.U,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.ShorenormalCoord.V = fillmissing(PUV.ShorenormalCoord.V,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-PUV_work.T = fillmissing(PUV.T,'linear','SamplePoints',PUV.time,'MaxGap',seconds(1));
-toc
-%% Split data into hour segments
-hourlen = (60*60*PUV_work.fs)
-segtotal = floor(length(PUV_work.time)/hourlen)
-PUV_work.time(segtotal*hourlen+1:end)=[];
-PUV_work.P(segtotal*hourlen+1:end)=[];
-PUV_work.BuoyCoord.U(segtotal*hourlen+1:end)=[];
-PUV_work.BuoyCoord.V(segtotal*hourlen+1:end)=[];
-PUV_work.BuoyCoord.W(segtotal*hourlen+1:end)=[];
-PUV_work.ShorenormalCoord.U(segtotal*hourlen+1:end)=[];
-PUV_work.ShorenormalCoord.V(segtotal*hourlen+1:end)=[];
-
-PUV_work.time = reshape(PUV_work.time, hourlen, segtotal);
-PUV_work.P = reshape(PUV_work.P, hourlen, segtotal);
-PUV_work.BuoyCoord.U = reshape(PUV_work.BuoyCoord.U, hourlen, segtotal);
-PUV_work.BuoyCoord.V = reshape(PUV_work.BuoyCoord.V, hourlen, segtotal);
-PUV_work.BuoyCoord.W = reshape(PUV_work.BuoyCoord.W, hourlen, segtotal);
-
-PUV_work.ShorenormalCoord.U = reshape(PUV_work.ShorenormalCoord.U, hourlen, segtotal);
-PUV_work.ShorenormalCoord.V = reshape(PUV_work.ShorenormalCoord.V, hourlen, segtotal);
-
-P = PUV_work.P;
-U = PUV_work.BuoyCoord.U;
-V = PUV_work.BuoyCoord.V;
-W = PUV_work.BuoyCoord.W;
-fs = PUV_work.fs;
-time = PUV_work.time;
-toc
-%% Get tides to check
-A1=split(importdata('Nov.txt', ' '));
-A2=split(importdata('Dec.txt', ' '));
-A3=split(importdata('Jan.txt', ' '));
-A4=split(importdata('Feb.txt', ' '));
-A5=split(importdata('Mar.txt', ' '));
-
-tide_time = [datetime(A1(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A1(2:end,3), 'InputFormat', 'HH:mm'));...
-	datetime(A2(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A2(2:end,3), 'InputFormat', 'HH:mm'));...
-	datetime(A3(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A3(2:end,3), 'InputFormat', 'HH:mm'));...
-	datetime(A4(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A4(2:end,3), 'InputFormat', 'HH:mm'));...
-	datetime(A5(2:end,1), 'InputFormat', 'yyyy/MM/dd') + timeofday(datetime(A5(2:end,3), 'InputFormat', 'HH:mm'))];
-
-tide = [str2num(char(A1(2:end,4)));...
-    str2num(char(A2(2:end,4)));...
-    str2num(char(A3(2:end,4)));...
-    str2num(char(A4(2:end,4)));...
-    str2num(char(A5(2:end,4)))];
-
-%% Get useable values
-tic
-Uprime = PUV_work.BuoyCoord.U;
-Vprime = PUV_work.BuoyCoord.V;
-for ii = 1:segtotal
-    if isempty(find(isnan(P(:,ii))))
-        [PUV_process_ENU(ii)] = vector_wave_stats_mspec(Uprime(:,ii), Vprime(:,ii), P(:,ii), doffp, doffu);
-    end
-end
-
-Uprime = PUV_work.ShorenormalCoord.U;
-Vprime = PUV_work.ShorenormalCoord.V;
-for ii = 1:segtotal
-    if isempty(find(isnan(P(:,ii))))
-        [PUV_process(ii)] = vector_wave_stats_mspec(Uprime(:,ii), Vprime(:,ii), P(:,ii), doffp, doffu);
-    end
-end
-toc
 %% Extract values
+disp('Extracting values from PUV_process structure')
 tic
 for ii = 1:segtotal
     if ~isempty(PUV_process(ii).ztest)
@@ -188,7 +202,7 @@ i_swell = PUV_process(1).ids.i_swell;
 fm = PUV_process(1).Spec.fm;
 df = fm(2)-fm(1);
 toc
-
+disp('Computing reflection coefficient')
 R2_ig = NaN(1,segtotal);
 R2_ss = NaN(1,segtotal);
 for ii = 1:segtotal
@@ -204,6 +218,7 @@ end
 toc
 
 %% Extract values ENU FOR
+disp('Extracting values from PUV_process_ENU structure')
 tic
 for ii = 1:segtotal
     if ~isempty(PUV_process_ENU(ii).ztest)
@@ -319,6 +334,7 @@ for ii = 1:segtotal
 end
 toc
 %% Extract values MOP FOR
+disp('Extracting values from PUV_process_MOP structure')
 tic
 for ii = 1:segtotal
     if ~isempty(PUV_process_MOP(ii).ztest)
@@ -423,6 +439,7 @@ toc
 
 
 toc
+disp('Making QA/QC plots')
 %% Ztest check
 figure(1);clf
 subplot(211)
@@ -441,7 +458,7 @@ hline(0.8)
 set(gcf, 'Position', [100,100,1000,600])
 saveas(gcf,'Ztest.png')
 %% Mean direction (f)
-id = 83
+id = 112; disp(['Selected comparison time is ' datestr(PUV_work.time(1,id)) ' , Hs = ' num2str(Hsig.Hs(id),'%2.2f') 'm'])
 
 figure(2);clf
 subplot(121)
@@ -449,22 +466,22 @@ polarplot(deg2rad(Dir.dir1(i_ig,id)), fm(i_ig), '.')
 hold on
 polarplot(deg2rad(Dir.dir2(i_ig,id)), fm(i_ig), '.')
 ax = gca;
-ax.ThetaDir = 'counterclockwise'
+ax.ThetaDir = 'counterclockwise';
 title('IG')
 subplot(122)
 polarplot(deg2rad(Dir.dir1(i_swell,id)), fm(i_swell), '.')
 hold on
 ax=gca;
 polarplot(deg2rad(Dir.dir2(i_swell,id)), fm(i_swell), '.')
-ax.ThetaDir = 'counterclockwise'
-ax.RLim=[0 0.25]
-ax.RTick = [0 0.05 0.1 0.15 0.2 0.25]
+ax.ThetaDir = 'counterclockwise';
+ax.RLim=[0 0.25];
+ax.RTick = [0 0.05 0.1 0.15 0.2 0.25];
 title('SS')
 %legend('dir1', 'dir2')
 sgtitle([string(time(1,id)) '- SN Coordinates'])
 
 set(gcf, 'Position', [100,100,1000,600])
-saveas(gcf,'Dir_polar_id83_SN_CCW.png')
+saveas(gcf,['Dir_polar_id' num2str(id) '_SN_CCW.png'])
 %% Reflection Coeff
 figure(3);clf
 subplot(311)
@@ -541,14 +558,16 @@ sgtitle('PU phase and coherence')
 set(gcf, 'Position', [100,100,1000,600])
 saveas(gcf,'PU_phase_coherence.png')
 %%
-loadMOPdata
-find(min(abs(time(1)-timeseries_mop)) == abs(time(1)-timeseries_mop))
+MOP = read_MOPline('D0582',time(1,1)-hours(1),time(end,end));
+
+% find(min(abs(time(1)-timeseries_mop)) == abs(time(1)-timeseries_mop))
 
 
 %% Compare bulk parameters to MOP
 figure(6);clf
 subplot(411)
-plot(timeseries_mop, Hs_mop)
+% plot(timeseries_mop, Hs_mop)
+plot(MOP.time,MOP.Hs)
 hold on
 plot(time(1,:), Hsig.Hsss)
 %plot(time(1,:), Hsig_MOP.Hsss)
@@ -559,7 +578,8 @@ ylabel('m')
 set(gca, 'FontSize', 20)
 
 subplot(412)
-plot(timeseries_mop, Tp_mop)
+% plot(timeseries_mop, Tp_mop)
+plot(MOP.time,1./MOP.fp)
 hold on
 plot(time(1,:), Tp)
 %plot(time(1,:), Tp_MOP)
@@ -570,7 +590,8 @@ ylabel('s')
 set(gca, 'FontSize', 20)
 
 subplot(413)
-plot(timeseries_mop, Sxx_mop)
+% plot(timeseries_mop, Sxx_mop)
+plot(MOP.time,MOP.Sxx)
 hold on
 plot(time(1,:), RS.Sxx_ss)
 %plot(time(1,:), RS_MOP.Sxx_ss)
@@ -581,7 +602,8 @@ ylabel('m^2')
 set(gca, 'FontSize', 20)
 
 subplot(414)
-plot(timeseries_mop, Sxy_mop)
+% plot(timeseries_mop, Sxy_mop)
+plot(MOP.time,MOP.Sxy)
 hold on
 plot(time(1,:), RS.Sxy_ss)
 %plot(time(1,:), RS_MOP.Sxy_ss)
@@ -639,9 +661,9 @@ saveas(gcf,'EigEss_v_depth.png')
 %% Directional Spreading Function
 clear d ds
 %compute directional spreding function using MEM estimator
-for ii = 1:segtotal
+for ii = id
     
-    d(:,:,ii)= mem_est(FC.a1(:,ii), FC.a2(:,ii), FC.b1(:,ii), FC.b2(:,ii));
+    d(:,:,ii)= mem_est(FC.a1(:,ii)', FC.a2(:,ii)', FC.b1(:,ii)', FC.b2(:,ii)');
     if isempty(PUV_process(ii).Spec)
         PUV_process(ii).Spec.SSE = NaN(length(fm),1);
     end
@@ -650,12 +672,14 @@ for ii = 1:segtotal
     end
 
 end
+ds(:,361,:)=ds(:,1,:);
+
 %% Directional Spreading Function
 clear d_ENU ds_ENU
 %compute directional spreding function using MEM estimator
 for ii = 1:segtotal
     
-    d_ENU(:,:,ii)= mem_est(FC_ENU.a1(:,ii), FC_ENU.a2(:,ii), FC_ENU.b1(:,ii), FC_ENU.b2(:,ii));
+    d_ENU(:,:,ii)= getmem(FC_ENU.a1(:,ii)', FC_ENU.a2(:,ii)', FC_ENU.b1(:,ii)', FC_ENU.b2(:,ii)');
     if isempty(PUV_process_ENU(ii).Spec)
         PUV_process_ENU(ii).Spec.SSE = NaN(length(fm),1);
     end
@@ -679,13 +703,13 @@ for ii = 1:segtotal
 
 end
 %% Checks on directional spectra
-aa = ds(:,1:360,1);
+aa = ds(:,1:360,id);
 ab = sum(aa,2);
 
 figure(9);clf
 plot(fm,ab, 'LineWidth', 5)
 hold on
-plot(fm,PUV_process(1).Spec.SSE, 'LineWidth', 3)
+plot(fm,PUV_process(id).Spec.SSE, 'LineWidth', 3)
 title('E(f) = \int_0^{2\pi}E(f,\theta)d\theta')
 legend('\int_0^{2\pi}E(f,\theta)d\theta', 'E(f)')
 set(gca, 'FontSize',  20)
@@ -694,75 +718,76 @@ set(gcf, 'Position', [100,100,1000,600])
 saveas(gcf,'Ef_vEftheta.png')
 
 figure(10);clf
-plot(fm, sum(d(:,:,1),2))
+plot(fm, sum(d(:,:,id),2))
 title('\int_0^{2\pi}G(\theta,f)d\theta = 1')
 set(gca, 'FontSize', 20)
 
 set(gcf, 'Position', [100,100,1000,600])
 saveas(gcf,'intG_check.png')
 
-id = find(min(abs(time(1)-timeseries_mop)) == abs(time(1)-timeseries_mop))
-
-a1 = FC.a1(:,1);
-b1 = FC.b1(:,1);
-a2 = FC.a2(:,1);
-b2 = FC.b2(:,1);
-
+% id = find(min(abs(time(1)-timeseries_mop)) == abs(time(1)-timeseries_mop))
+% idmop = 1;
+a1 = FC.a1(:,id);
+b1 = FC.b1(:,id);
+a2 = FC.a2(:,id);
+b2 = FC.b2(:,id);
+%%
 figure(11);clf
-
+theta = 0:359;
 subplot(221)
-ab = sum(aa.*cosd([0:359]),2);
+ab = sum(aa.*cosd(theta),2);
 plot(fm,ab)
 hold on
 plot(fm, a1)
-plot(Fq_mop, a1_mop(:,id))
+plot(MOP.frequency, MOP.a1(id,:))
 legend('\int_0^{2\pi}G(f,\theta)cos{\theta}d\theta', 'a1', 'mop')
 title('a1')
 set(gca, 'FontSize', 20)
 
 subplot(222)
-ab = sum(aa.*cosd(2*[0:359]),2);
+ab = sum(aa.*cosd(2*theta),2);
 plot(fm,ab)
 hold on
 plot(fm, a2)
-plot(Fq_mop, a2_mop(:,id))
+plot(MOP.frequency, MOP.a2(id,:))
 legend('\int_0^{2\pi}G(f,\theta)cos{2\theta}d\theta', 'a2', 'mop')
 title('a2')
 set(gca, 'FontSize', 20)
 
 subplot(223)
-ab = sum(aa.*sind([0:359]),2);
+ab = sum(aa.*sind(theta),2);
 plot(fm,ab)
 hold on
 plot(fm, b1)
-plot(Fq_mop, b1_mop(:,id))
+plot(MOP.frequency, MOP.b1(id,:))
 legend('\int_0^{2\pi}G(f,\theta)sin{\theta}d\theta', 'b1', 'mop')
 title('b1')
 set(gca, 'FontSize', 20)
 
 subplot(224)
-ab = sum(aa.*sind(2*[0:359]),2);
+ab = sum(aa.*sind(2*theta),2);
 plot(fm,ab)
 hold on
 plot(fm, b2)
-plot(Fq_mop, b2_mop(:,id))
+plot(MOP.frequency, MOP.b2(id,:))
 legend('\int_0^{2\pi}G(f,\theta)sin{2\theta}d\theta', 'b2', 'mop')
 title('b2')
 set(gca, 'FontSize', 20)
 
-set(gcf, 'Position', [100,100,2000,1000])
+% set(gcf, 'Position', [100,100,2000,1000])
 saveas(gcf,'mop_puv_dirspec_FC.png')
 %% Plot Dirspectra
 ds(:,361,:)=ds(:,1,:);
 figure(12);clf
-polarPcolor(fm', [0:360], ds(:,:,83)', 'XAngle',0,'Nspokes',13)
+polarPcolor(fm', [0:360], ds(:,:,id), 'Nspokes',13,'typeRose','default')
+
 %h1 = pcolor(fm', [0:360], log(ds(:,:,83))')
 sgtitle('Dirspec from PUV in Shorenormal Coords')
 %set(h1, 'EdgeColor', 'none')
 
 set(gcf, 'Position', [100,100,600,600])
-saveas(gcf,'Dirspec_id83_SN.png')
-
+saveas(gcf,['Dirspec_id' num2str(id) '_SN.png'])
+%%
 %ds_MOP(:,361,:)=ds_MOP(:,1,:);
 % figure(2);clf
 % polarPcolor(fm', [0:360], (log(ds_MOP(:,:,83))'), 'XAngle', 270-shorenormal+180,'Nspokes',13)
@@ -773,25 +798,27 @@ saveas(gcf,'Dirspec_id83_SN.png')
 
 ds_ENU(:,361,:)=ds_ENU(:,1,:);
 figure(13);clf
-polarPcolor(fm', [0:360], log(ds_ENU(:,:,83))', 'XAngle',0,'Nspokes',13)
+polarPcolor(fm',  [0:360], log(ds_ENU(:,:,id))', 'XAngle',0,'Nspokes',13)
 %h3 = pcolor(fm', [0:360], log(ds_ENU(:,:,83))')
 %set(h3, 'EdgeColor', 'none')
 sgtitle('Dirspec from PUV in ENU Coords')
-caxis([-15 -5])
+% caxis([-15 -5])
 set(gcf, 'Position', [100,100,600,600])
-saveas(gcf,'Dirspec_id83_ENU.png')
+saveas(gcf,['Dirspec_id' num2str(id) '_ENU.png'])
 %%
-id = find(min(abs(time(83)-timeseries_mop)) == abs(time(83)-timeseries_mop))
-
-    d_mopmop= mem_est(a1_mop(:,id), a2_mop(:,id), b1_mop(:,id), b2_mop(:,id));
+% id = find(min(abs(time(83)-timeseries_mop)) == abs(time(83)-timeseries_mop))
+clear ds_mopmop d_mopmop
+    d_mopmop=getmem(MOP.a1(id,:), MOP.a2(id,:), MOP.b1(id,:), MOP.b2(id,:));
     
-    for i=1:length(Fq_mop) % loop through freq bands
-        ds_mopmop(i,:)=d_mopmop(i,:)*Ed_mop(i,id); % mutiply by the freq band total energy
+    for i=1:length(MOP.fbw) % loop through freq bands
+        ds_mopmop(i,:)=d_mopmop(i,:)*MOP.spec1D(id,i)'; % mutiply by the freq band total energy
     end
 
 %%
 ds_mopmop(:,361)=ds_mopmop(:,1);
 figure(14);clf
-polarPcolor(double(Fq_mop'), [0:360], log(ds_mopmop)', 'XAngle', 270+180,'Nspokes',13)
+% polarPcolor(double(Fq_mop'), [0:360], log(ds_mopmop)', 'XAngle', 270+180,'Nspokes',13)
+polarPcolor(double(MOP.frequency)', [0:360], ds_mopmop', 'Nspokes',13,'typeRose','meteo')
+
 sgtitle('Dirspec from MOP')
-caxis([-15 -5])
+% caxis([-15 -5])

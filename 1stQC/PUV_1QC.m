@@ -13,7 +13,9 @@ tic
 % input directory where data is - one deloyment per folder
 %directory = '/Volumes/Lange_SIO/Ch2_IG/DATA/By instrument/NortekVector/2019-2020_TorreyPinesMOP582_10meter'
 directory = '/Users/athinalange/Desktop/IG_BC_remote_work/2019-2020_TorreyPinesMOP582_10meter/DATA'
-filename = 'DATA/Torrey_1920_582_10'
+directory = '~/Desktop/check_Athina_code/2019-2020_TorreyPinesMOP582_10meter'
+
+filename = 'Torrey_1920_582_10'
 
 %% From fieldwork excel sheet:
 % input lat/lon of sensor
