@@ -13,13 +13,15 @@ spread(i) = PUV_process(i).dir.spread2_ss_sum;
 end
 end
 
-
-
 %%
 
+%id = 795%1582; %1581;
+ids = [123 256 274 376 1580 795];%1580; %1581;
+figure(8);clf
+for jj = 1:6
+clearvars -except PUV_process Hsig fmean spread jj ids
 
-
-id = 1582; %1581;
+id = ids(jj)
 fm = PUV_process(id).Spec.fm;
 i_swell = PUV_process(id).ids.i_swell;
 %%
@@ -32,7 +34,6 @@ d = PUV_process(id).Eflux.depth;
 clear dd ds
 %compute directional spreding function using MEM estimator
 
-    
     dd(:,:)= mem_est(FC.a1, FC.a2, FC.b1, FC.b2);
 
     for i=1:length(fm) % loop through freq bands
@@ -42,15 +43,20 @@ clear dd ds
 % shift dd to work in 'coming from' angle because I am backwards today
 ds = [ds(:,90:end) ds(:,1:89)];
 
+%  Fake '2D' version   
+% ds = zeros(901, 360);
+% ds(:, 270) = PUV_process(id).Spec.SSE;
+
 %% do the bound wave thang
 dds = repmat(ds,1,1,360); % double the angles, double the fun
 clear e1 e2 e12
 omega = 2*pi*fm;
 kwav = get_wavenumber(omega,d);
 
-
-theta1 = [180:360]; theta2= theta1; lt = length(theta1);
-% theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
+theta1 = [180:360]; 
+%theta1 = [270-29:270+30];
+theta2= theta1; lt = length(theta1);
+%theta1 = [1:360]; theta2 = theta1; lt = length(theta1);
 
 e1D = PUV_process(id).Spec.SSE(1:length(fm));
 [THETA1,THETA2] = meshgrid(theta1,theta2);
@@ -68,6 +74,7 @@ cosdt = cosd(THETA2-THETA1+180);
  hw = waitbar(0./length(f_bound),'Looping through all IG difference frequencies');
  
  for idf = iidf %index deltaf, 1st loop runs through everything on the df
+     idf
      waitbar(idf./max(iidf),hw,['df = ' num2str(fm(idf),'%2.4f') ' Hz'])
 %         n = 0;
      for ii = i_swell(1):i_swell(end)-idf % for all swell indices, 2nd loop runs through everything on f1, so all combos of df,f1 and f2 = f1+df
@@ -90,10 +97,10 @@ cosdt = cosd(THETA2-THETA1+180);
         T2 = 1/2/g.*(omega1.^2+omega2^2+omega1.*omega2); %equation 11, 2nd half
         
         T3 = g*(omega1+omega2) ./...
-            (( g*k3*tanh(k3*d) - (omega1+omega2).^2 ).*(omega1*omega2));
+            (( g*k3.*tanh(k3.*d) - (omega1+omega2).^2 ).*(omega1*omega2));
         
         
-        D = T1+T2+T3*C;    
+        D = T1+T2+T3.*C; % aa(idf,ii) = D(270,270);   
         
 %         1D version (I am too lazy to write good code).
         cosdt1 = -1;
@@ -108,7 +115,7 @@ cosdt = cosd(THETA2-THETA1+180);
             (( g*k3*tanh(k3*d) - (omega1+omega2).^2 ).*(omega1*omega2));
         
         
-        D1D = T1+T2+T3*C; 
+        D1D = T1+T2+T3*C; %aa1d(idf,ii) = D1D; 
         
      % get energy at f2,theta1 and f1,theta2
 %      e1 = squeeze(dds(ii+idf,theta1,theta2)); % E(f2,all-thetas)
@@ -117,15 +124,15 @@ cosdt = cosd(THETA2-THETA1+180);
      e2 = ds(ii,theta1);
      
      % get energy at f3, boundwave, need squared values because energy
-     E3(ii,:,:) = D.^2*e1'*e2;
+     E3(ii,:,:) = D.^2.*(e1'*e2);
      E31D(ii) = D1D.^2.*e1D(ii).*e1D(ii+idf);
        
      end %swell loop
        %adding a 2pi here because i like it better this way
-       E_bound(idf) = 2/(2*pi)*sum(E3*df,'all');
+       E_bound(idf) = 2*sum(E3*df,'all');
        E_bound1D(idf) = 2*sum(E31D*df,'all');
 
-     
+    
  end % df loop
  toc
  close(hw)
@@ -133,22 +140,22 @@ E_bound = E_bound(iidf);
 E_bound1D = E_bound1D(iidf);
 %
 %%
-% clf
+
 esector = 1/lt.*sum(dds(:,theta2,theta1),[2 3]);
-subplot(1,2,1)
-semilogy(fm,esector)
+subplot(6,2,1+(jj-1)*2)
+semilogy(fm,esector,'linewidth',4)
 hold on
-semilogy(fm,sum(ds,2))
+semilogy(fm,sum(ds,2),'linewidth',2)
 hold on
-semilogy(f_bound,E_bound,'linewidth',2)
+semilogy(f_bound,E_bound,'linewidth',4)
 semilogy(f_bound,E_bound1D,'linewidth',2)
 
  xlabel('f (Hz)')
  ylabel('E (m^2/Hz)')
  title(['id = ' num2str(id) ', Hs = ' num2str(Hsig(id),'%2.2f') ' m, spread = ' num2str(spread(id),'%2.2f') '\circ']) 
  legend('sum of E(f,theta_{calc})','sum of E(f,theta) TOTAL','2D bound','1D bound')
- 
-ax2 = subplot(1,2,2);
+ set(gca, 'FontSize', 15)
+ax2 = subplot(6,2,2+(jj-1)*2)
 % polarPcolor(R,theta,Z,'Ncircles',3)
 
 [h,c] = polarPcolor(fm',0:360,[ds ds(:,end) ],'Nspokes',9,'typeRose','meteo'); shading flat
@@ -158,16 +165,16 @@ c.Label.String  = 'E(f,\theta)'; c.Label.FontSize = 12;
 % theta1 = [1:15 345:360];
 dr = ds;
 dr(i_swell,theta1) = 1;
-
+set(gca, 'FontSize', 15)
 [h2,c2] = polarPcolor(fm',0:360, [dr dr(:,end)],'Nspokes',9,'typeRose','meteo','colbar',0); shading flat
 h2.FaceAlpha = 0.2;
 %  xlabel('f (Hz)')
 %  ylabel('Dir (\circ), 0\circ  = onshore')
 h =  title('E(f,\theta), 270\circ shorenormal'); h.Position(2) = 1.1;
- saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
+% saveas(gcf,['../viz/test_boundwave_' num2str(id) '.png'])
 
 toc
-
+end
 %%
 % for i=1:300
 % %     plot(theta1,squeeze(sum(E_bound(i,:,:),2)))
@@ -178,5 +185,3 @@ toc
 % pcolor(squeeze(dds(i,:,:))); shading flat
 %     pause(0.1)
 % end
-
-    
