@@ -58,12 +58,19 @@ correction = zeros(size(fm));
 convert = zeros(size(fm));
 
 fcutoff = 0.25;
+
 ii = find(fm <= fcutoff);
 i_ig = find(fm>0.004 & fm<0.04);
 i_swell = find(fm>0.04 & fm<0.2);
 
 
 correction(ii) = cosh(k(ii)*depth) ./ cosh(k(ii)*doffp);
+%limit the correction factor K_p = correction^2 to 10 (order of magnitude)
+%this will allow for adjustment in depth and stop overcorrection
+%attempted to follow Jones and Monismith 2007 at 12* the noise floor 
+%but their sensors are too shallow. 
+cutoffFreq = fm(find(correction.^2 >= 10,1));
+correction(correction.^2>10) = sqrt(10);
 convert(ii) = (2*pi*fm(ii)./(g*k(ii))) .* cosh(k(ii)*doffp) ./ cosh(k(ii)*doffu);  % record conversion coefs to check them
 %units = m*s^2/(m*s) = s
 
@@ -98,7 +105,7 @@ SSEUP = PUpres.*correction; %sea surface elevation determined from PU cospectra
 
 Spec = struct('fm', fmt,'SSE',SSEt, 'Spp', Sppt,'Suu', Suut, 'Svv', Svvt, 'Spu', Sput, 'Spv', Spvt, 'Suv', Suvt, ...
             'UUpres', UUpres, 'VVpres', VVpres, 'UVpres', UVpres, 'PUpres', PUpres, 'PVpres', PVpres, ...
-            'SppU', SppU, 'SSEU', SSEU, 'SSEUU',SSEUU, 'SSEUP', SSEUP);
+            'SppU', SppU, 'SSEU', SSEU, 'SSEUU',SSEUU, 'SSEUP', SSEUP,'cutoffFreq',cutoffFreq);
         
 %% DONE Z TEST
 ztest_all = Spp./SppU;
