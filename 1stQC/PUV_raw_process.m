@@ -118,6 +118,8 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
             id = char(string(ii))
             eval(['clear SEN' id ' DAT' id '; date(' id ',:) = []; date_end(' id ',:)=[];'])
         end
+    else
+        cutoff.burst = length(filenames);
     end
 
     %% ----------------- Combine all the data ----------------- 
@@ -139,7 +141,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
             % add NaN's to end of DAT file to match 2*length of SEN file. 
             eval(['DAT' id '(end+1:end+(length(SEN' id ')*2-length(DAT' id ')),:) = NaN;'])
             % add DAT data to new array for full deployment
-            eval(['DAT(find(date(ii) == full_date):find(date_end(ii) == full_date)+1,:) = DAT' id ';'])
+            eval(['DAT(find(date(ii) == full_date):find(date_end(ii) == full_date)+1,:) = DAT' id '(1:length((find(date(ii) == full_date):find(date_end(ii) == full_date)+1)),:);'])
             
             eval(['SEN(find(date(ii) == full_date):2:find(date_end(ii) == full_date)+1,:) = SEN' id ';'])
             eval(['SEN(find(date(ii) == full_date)+1:2:find(date_end(ii) == full_date),:) = SEN' id '(1:end-1,:);'])
@@ -162,7 +164,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % adjusting for drift
     full_date = full_date - driftfix; 
     
-    %% TODO AUTOMATE ----------------- Remove above surface level points & Heading/Tilt issues -----------------
+    %% ----------------- Remove above surface level points & Heading/Tilt issues -----------------
     % need to fix to get input
     
     % There shouldn't be any crazy changes in Heading, Pitch or Roll
@@ -173,34 +175,57 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % P should have dips to 0 (at surface), at the beginning of the
     % deployment and during any inspections. Look at the excel sheet to
     % check where there should be confirmed dips, and replace with NaNs. 
-  
-    depl_start_id = 223649;
-    inspe_start_id = 13123100;%13345000;
-    inspe_end_id = 13126300;%13345600;
-    pitch_issue_start_id = 13343100;
-    pitch_issue_end_id = 13346400;
-    
-    inspec_id = [1 depl_start_id; 
-              inspe_start_id inspe_end_id;
-              pitch_issue_start_id pitch_issue_end_id];
+    aa=SEN(:, 14);
+    ab=SEN(:, 12);
+    ac=SEN(:, 13);
+    ad=DAT(:,15);
+    id = find(abs(ab)>=5); % PITCH
+    ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
+    id = find(abs(ac)>=5); % ROLL
+    ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
+    id = find(ad < nanmedian(ad)/2); % PRESSURE
+    ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
+    id = find(ad > 15); % PRESSURE
+    ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
+    figure
+    subplot(311)
+    plot(full_date, SEN(:, 12))
+    hold on
+    plot(full_date,ab)
+    title('Pitch')
 
-    for ii = size(inspec_id,1):-1:2
-        %full_date(inspec_id(ii,1):inspec_id(ii,2))=NaT;
-        DAT(inspec_id(ii,1):inspec_id(ii,2),:)=NaN;
-        SEN(inspec_id(ii,1):inspec_id(ii,2),:)=NaN; 
-    end
+    subplot(312)
+    plot(full_date, SEN(:, 13))
+    hold on
+    plot(full_date,ac)
+    title('Roll')
     
-    full_date(inspec_id(1,1):inspec_id(1,2))=[];
-    DAT(inspec_id(1,1):inspec_id(1,2),:)=[];
-    SEN(inspec_id(1,1):inspec_id(1,2),:)=[]; 
+    subplot(313)
+    plot(full_date, DAT(:,15))
+    hold on
+    plot(full_date,ad)
+    title('Pressure')
+
+    disp('Press key if happy')
+    pause
+
+    id = find(abs(SEN(:,12))>=5); % PITCH
+    DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
+    id = find(abs(SEN(:, 13))>=5); % ROLL
+    DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
+    id = find(DAT(:,15) < nanmedian(DAT(:,15))/2); % PRESSURE
+    DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
     
     %% ----------------- Remove all values with minCorr < 70% -----------------
     bad_data = find(min(DAT(:,[12:14]),[],2) < 70);
 
-    %full_date(bad_data) = NaT;
     DAT(bad_data, :) = NaN;
     SEN(bad_data, :) = NaN;
-
+    %% Start with value - Not NAN
+    id = find(~isnan(DAT(:,15)));
+    DAT(1:id(1)-1,:)=[];
+    SEN(1:id(1)-1,:)=[];
+    full_date(1:id(1)-1)=[];
     %% Pull data into separate variables
 
     U = DAT(:,3); V = DAT(:,4); W = DAT(:,5); % in m/s
@@ -226,7 +251,6 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     
     W = -W;  %left-hand coordinate system
     
-
     [~,~, magDeclination, ~,~] = igrfmagm(0, LAT,LON, decyear(SEN1(1,3),SEN1(1,1),SEN1(1,2)), 13)
 
     fid=fopen(sprintf('%s/%s%s.hdr',directory,depstr,'1')); 
@@ -256,8 +280,6 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         printf('Does a coordinate system rotation need to happen?')
     end
 
-   
-
     % NOW: +x is WEST, +y is NORTH, +z is UP ==> LH Coordinate System
     
     %% SAVE VARIABLES
@@ -275,25 +297,21 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     PUV.rotation.sensor = rot_angle;
     PUV.rotation.mag = magDeclination;
     
-
     hourlen = (60*60*PUV.fs)
     segtotal = floor(length(PUV.time)/hourlen)
     aa = find(hour(PUV.time(1:hourlen)) == hour(PUV.time((1))));
     if size(aa) < hourlen
         sprintf('Beginning timeseries at the next hour')
-        PUV.P(aa)=[];
-        PUV.BuoyCoord.U(aa)=[];
-        PUV.BuoyCoord.V(aa)=[];
-        PUV.BuoyCoord.W(aa)=[];
-        PUV.InstrCoord.U(aa)=[];
-        PUV.InstrCoord.V(aa)=[];
-        PUV.T(aa)=[];
-        PUV.time(aa)=[];
-
+        PUV.P(1:aa(end))=[];
+        PUV.BuoyCoord.U(1:aa(end))=[];
+        PUV.BuoyCoord.V(1:aa(end))=[];
+        PUV.BuoyCoord.W(1:aa(end))=[];
+        PUV.InstrCoord.U(1:aa(end))=[];
+        PUV.InstrCoord.V(1:aa(end))=[];
+        PUV.T(1:aa(end))=[];
+        PUV.time(1:aa(end))=[];
     end
-    
-
-    save([filename '_processed'], 'PUV')
-    %save_initial_processingPUV_netcdf
-    
+    %%
+    save([filename '_processed.mat'], 'PUV', 'filename')
+    save_initial_processingPUV_netcdf
 end
