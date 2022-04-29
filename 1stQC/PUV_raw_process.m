@@ -2,7 +2,7 @@
 %
 %
 % Load Nortek Vector files
-% Account for timedrift, battery failure, beginning of deployment & inspection
+% Account for timedrift, battery failure, beginning of deployment & inspection (based on Pitch, Roll & Pressure)
 % removing bad data (minCorr < 70%)
 % rotate to buoy coordinates (+x WEST, +y NORTH, +z up)
 % save to PUV variable
