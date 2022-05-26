@@ -2,7 +2,7 @@
 %
 %
 % Load Nortek Vector files
-% Account for timedrift, battery failure, beginning of deployment & inspection (based on Pitch, Roll & Pressure)
+% Account for timedrift, battery failure, beginning of deployment & inspection
 % removing bad data (minCorr < 70%)
 % rotate to buoy coordinates (+x WEST, +y NORTH, +z up)
 % save to PUV variable
@@ -245,7 +245,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % original POV is the compass heading + magentic declination off of NORTH,
     % subtract the angle from 270 for a CW rotation values . 
 
-    % if sensor upward looking: +z is down
+    % if sensor upward looking: +z is down default
 
     % ALL THIS SHOULD BE CONFIRMED BY COMPARING FC WITH BUOY
     
@@ -312,6 +312,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
         PUV.time(1:aa(end))=[];
     end
     %%
-    save([filename '_processed.mat'], 'PUV', 'filename')
+    %
+    save([filename '_processed_CW.mat'], 'PUV', 'filename')
     save_initial_processingPUV_netcdf
 end
