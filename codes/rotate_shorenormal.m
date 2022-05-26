@@ -1,4 +1,4 @@
-%% Rotate to shorenormal coordinates
+%% Rotate to shorenormal coordinates (MOP)
 %
 % From WNU coordinate system, pulling shorenormal angle from CDIP,
 % rotating to onshore, shorenormal (+x) and alongshore, north (+y) [Right-handed coordinate system]
@@ -11,11 +11,12 @@
 % Athina Lange, SIO July 2021
 
 
-function [Uprime, Vprime, shorenormal] = rotate_shorenormal(U, V);
+function [Uprime, Vprime, shorenormal] = rotate_shorenormal(U, V, mop);
 
 load('moplist') % fulll list of all CDIP buoy's as of 07/22/19
-[indx,tf] = listdlg('ListString',moplist, 'SelectionMode','single', 'InitialValue',[1], 'Name', 'What MOP do you want to use?');
-stn = char(moplist(indx));
+%[indx,tf] = listdlg('ListString',moplist, 'SelectionMode','single', 'InitialValue',[1], 'Name', 'What MOP do you want to use?');
+%stn = char(moplist(indx));
+stn = char(moplist(find(contains(string(moplist), mop))))
 ncfile = strcat('http://thredds.cdip.ucsd.edu/thredds/dodsC/cdip/model/MOP_alongshore/', string(stn(end-4:end)), '_nowcast.nc');
 shorenormal=ncread(ncfile,'metaShoreNormal'); % mop shore normal
 
