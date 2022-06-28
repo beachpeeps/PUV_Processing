@@ -69,7 +69,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % create linspace that is length of deployment, and starts at 0 to the drifttime
     driftfix = linspace(seconds(0), seconds(clockdrift), totalseconds*fs+1);
     
-   %% ----------------- Save original data to netcdf -----------------
+    %% ----------------- Save original data to netcdf -----------------
     %save_raw_data_netcdf
     
     %% ----------------- Find beginning of intermittent data recording -----------------
@@ -185,7 +185,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
     id = find(ad < nanmedian(ad)/2); % PRESSURE
     ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
-    id = find(ad > 15); % PRESSURE
+    id = find(ad > nanmedian(ad)*2); % PRESSURE
     ab(id) = NaN; ac(id) = NaN; ad(id) = NaN;clear id
     figure
     subplot(311)
@@ -214,6 +214,8 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     id = find(abs(SEN(:, 13))>=5); % ROLL
     DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
     id = find(DAT(:,15) < nanmedian(DAT(:,15))/2); % PRESSURE
+    DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
+    id = find(DAT(:,15) > nanmedian(DAT(:,15))*2); % PRESSURE
     DAT(id,:) = NaN; SEN(id,:) = NaN; clear id
     
     %% ----------------- Remove all values with minCorr < 70% -----------------
