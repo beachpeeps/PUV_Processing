@@ -168,7 +168,7 @@ function [PUV] = PUV_raw_process(directory, filename, LATLON, rot_angle, clockdr
     % need to fix to get input
     
     % There shouldn't be any crazy changes in Heading, Pitch or Roll
-    % (no greater than 10deg) (if between 10 and 20deg, should do 'map to
+    % (no greater than 5deg) (if between 10 and 20deg, should do 'map to
     % vertical', but here those instances agree with deploy and inspection
     % - issues with P, so we replace with NaN). 
     
