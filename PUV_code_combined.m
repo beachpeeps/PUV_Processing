@@ -1,8 +1,8 @@
 clear all
 tic
-%% Load all instrument data - need to create excel sheet from Reefbreak deployment sheet
 % input directory where data is - one deloyment per folder
 cd /Volumes/LANGE_Passport/PUV/Ruby2D/
+addpath(genpath('/Volumes/LANGE_Passport/PUV/PUV_Processing'))
 files = dir(pwd)
 for ii = 1:length(files);names{ii}=files(ii).name;end
 deploy_notes = readtable(string(names(contains(names, 'Notes'))))
@@ -20,16 +20,19 @@ if length(find(aa(:,2)>1))>0
         deploy_notes(nn,:)=deploy_notes(nn(ii),:);
     end
 end
-% remove any non-folder files
+
 for nn = length(files):-1:1 
-    if files(nn).name(1) == '.' | files(nn).isdir == 0
+    if files(nn).name(1) == '.' | files(nn).isdir == 0 | contains(files(nn).name, 'Level')
         files(nn)=[];
     end
 end
 
+
+%%
+
 %% Raw Process Data - Level 1
 for ii = 1:length(files)
-    directory = ['MOP' num2str(deploy_notes.MOP(ii)) '-' num2str(deploy_notes.Depth(ii)) 'm'];
+    directory = [       'MOP' num2str(deploy_notes.MOP(ii)) '-' num2str(deploy_notes.Depth(ii)) 'm'];
     filename = ['Torrey_Ruby2D_' num2str(deploy_notes.MOP(ii)) '_' num2str(deploy_notes.Depth(ii)) 'm'];
     % input lat/lon of sensor
     LATLON = [deploy_notes.Latitude(ii) deploy_notes.Longitude(ii)];
@@ -42,12 +45,14 @@ for ii = 1:length(files)
 end
 %% Compute Stats - Level 2
 
-for ii = 1%:length(files)
-    directory = ['MOP' num2str(deploy_notes.MOP(ii)) '-' num2str(deploy_notes.Depth(ii)) 'm'];
-    filename = ['Torrey_Ruby2D_' num2str(deploy_notes.MOP(ii)) '_' num2str(deploy_notes.Depth(ii)) 'm'];
+for ll = 1:length(files)
+    clearvars -except files deploy_notes names ll
+    disp('New run')
+    directory = ['MOP' num2str(deploy_notes.MOP(ll)) '-' num2str(deploy_notes.Depth(ll)) 'm'];
+    filename = ['Torrey_Ruby2D_' num2str(deploy_notes.MOP(ll)) '_' num2str(deploy_notes.Depth(ll)) 'm'];
     load(['Level1_QC/' filename '_processed'], 'PUV')
     PUV.mop = filename(15:17);
-    doffp = deploy_notes.Doffp(ii)/100;
+    doffp = deploy_notes.Doffp(ll)/100;
 
     %% Rotate to shorenormal coordinates (MOP)
     
@@ -70,21 +75,46 @@ for ii = 1%:length(files)
     PUV_work.T = fillmissing(PUV.T,'linear','SamplePoints',PUV.time,'MaxGap',seconds(2));
     toc
     %% Split data into hour segments
-    
-    for ii = 0:floor(length(PUV_work.time)/7200)
-        if minute(PUV.time(1+7200*ii)) ~= 0
-            PUV_work.time(1+7200*ii)=[];
-            PUV_work.P(1+7200*ii)=[];
-            PUV_work.BuoyCoord.U(1+7200*ii)=[];
-            PUV_work.BuoyCoord.V(1+7200*ii)=[];
-            PUV_work.BuoyCoord.W(1+7200*ii)=[];
-            PUV_work.ShorenormalCoord.U(1+7200*ii)=[];
-            PUV_work.ShorenormalCoord.V(1+7200*ii)=[];
+   
+    % check that only 7200 values recorded every hour - add NaN if a value
+    % is skipped. Remove value if extra value recorded
+    it=find(floor(second(PUV_work.time))==0 & minute(PUV_work.time) == 0);
+    for ii = 2:length(it)
+        if diff(it(ii-1:ii)) == 1
+            it(ii)=NaN;
         end
     end
+    it(isnan(it))=[];
+
+    for ii = 1:length(it)-1
+        if it(ii+1)-it(ii) == 7201 % extra value
+            PUV_work.time(it(ii+1)-1)=[];
+            PUV_work.P(it(ii+1)-1)=[];
+            PUV_work.BuoyCoord.U(it(ii+1)-1)=[];
+            PUV_work.BuoyCoord.V(it(ii+1)-1)=[];
+            PUV_work.BuoyCoord.W(it(ii+1)-1)=[];
+            PUV_work.ShorenormalCoord.U(it(ii+1)-1)=[];
+            PUV_work.ShorenormalCoord.V(it(ii+1)-1)=[];
+            it(ii+1:end) = it(ii+1:end)-1;
+           
+        elseif it(ii+1)-it(ii) == 7199 % missing a value
+            PUV_work.time = [PUV_work.time(1:it(ii)+7200-1); PUV_work.time(it(ii)+7200-1); PUV_work.time(it(ii)+7200:end)];
+            PUV_work.P = [PUV_work.P(1:it(ii)+7200-1); NaN; PUV_work.P(it(ii)+7200:end)];
+            PUV_work.BuoyCoord.U = [PUV_work.BuoyCoord.U(1:it(ii)+7200-1); NaN; PUV_work.BuoyCoord.U(it(ii)+7200:end)];
+            PUV_work.BuoyCoord.V = [PUV_work.BuoyCoord.V(1:it(ii)+7200-1); NaN; PUV_work.BuoyCoord.V(it(ii)+7200:end)];
+            PUV_work.BuoyCoord.W = [PUV_work.BuoyCoord.W(1:it(ii)+7200-1); NaN; PUV_work.BuoyCoord.W(it(ii)+7200:end)];
+            PUV_work.ShorenormalCoord.U = [PUV_work.ShorenormalCoord.U(1:it(ii)+7200-1); NaN; PUV_work.ShorenormalCoord.U(it(ii)+7200:end)];
+            PUV_work.ShorenormalCoord.V = [PUV_work.ShorenormalCoord.V(1:it(ii)+7200-1); NaN; PUV_work.ShorenormalCoord.V(it(ii)+7200:end)];
+            it(ii+1:end) = it(ii+1:end)+1;
+           
+        end
+    end
+    toc
 
     hourlen = (60*60*PUV_work.fs);
     segtotal = floor(length(PUV_work.time)/hourlen);
+    PUV_work.time(hourlen*segtotal)
+
     PUV_work.time(segtotal*hourlen+1:end)=[];
     PUV_work.P(segtotal*hourlen+1:end)=[];
     PUV_work.BuoyCoord.U(segtotal*hourlen+1:end)=[];
@@ -102,13 +132,16 @@ for ii = 1%:length(files)
     PUV_work.ShorenormalCoord.U = reshape(PUV_work.ShorenormalCoord.U, hourlen, segtotal);
     PUV_work.ShorenormalCoord.V = reshape(PUV_work.ShorenormalCoord.V, hourlen, segtotal);
 
-    
+    toc
     PUV = PUV_work;
-    save(['Level2_QC/' filename '_PUV_work'],'PUV', '-v7.3')
+    disp('Saving PUV_work')
+    save(['Level2_QC/' filename '_PUV_work.mat'],'PUV', '-v7.3')
+    %save(['/Users/athinalange/Desktop/' filename '_PUV_work.mat'],'PUV', '-v7.3')
+    
     toc
     %% Compute different wave stats
     disp('Getting wave stats, writing to PUV_process')
-    tic
+    
     P = PUV_work.P;
     U = PUV_work.BuoyCoord.U;
     V = PUV_work.BuoyCoord.V;
@@ -117,8 +150,7 @@ for ii = 1%:length(files)
     time = PUV_work.time;
     toc
     
-    %% Shorenormal, +x onshore, +y alongshore north, +z upward 
-    % use for boundwave codes
+    
     Uprime = PUV_work.ShorenormalCoord.U;
     Vprime = PUV_work.ShorenormalCoord.V;
     for ii = 1:size(P,2)
@@ -134,8 +166,7 @@ for ii = 1%:length(files)
         
         end
     end
-    
-    % Buoy coordinates: +x West, +y North, +z Up
+
     Uprime = PUV_work.BuoyCoord.U;
     Vprime = PUV_work.BuoyCoord.V;
     for ii = 1:size(P,2)
@@ -152,9 +183,11 @@ for ii = 1%:length(files)
         end
     end
     toc
-
+    
+    disp('Saving PUV_process')
     %save('eta', 'eta_level', '-v7.3')
     save(['Level2_QC/' filename '_PUV_process.mat'], 'PUV_process', 'PUV_process_buoy', '-v7.3')
+    %save(['/Users/athinalange/Desktop/' filename '_PUV_process.mat'], 'PUV_process', 'PUV_process_buoy', '-v7.3')
 
 toc
 
