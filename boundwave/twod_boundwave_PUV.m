@@ -21,9 +21,9 @@ end
 %id = 795%1582; %1581;
 ids = [123 256 1143 1126 1580 274 795 376];%1580; %1581;
 %figure(8);clf
-for jj = 1:8%1:length(PUV_process)
+for jj = 1:length(PUV_process)
 %clearvars -except boundwave PUV_process Hsig fmean spread jj eta_level ids
-id = ids(jj)
+id = jj%ids(jj)
 if isempty(PUV_process(id).Spec) == 0
 sprintf('hi')
 fm = PUV_process(id).Spec.fm;
@@ -146,6 +146,7 @@ E_bound = E_bound(iidf);
 E_bound1D = E_bound1D(iidf);
 
 boundwave(id).E_bound = E_bound;
+boundwave(id).E3 = 3;
 boundwave(id).E_bound1D = E_bound1D;
 boundwave(id).f_bound = f_bound;
 boundwave(id).ds = ds;
@@ -220,3 +221,5 @@ end
     
 toc
 end
+%%
+PUV.boundwave = boundwave;
