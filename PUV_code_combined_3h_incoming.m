@@ -429,7 +429,7 @@ save(fullfile(data_dir, 'Level3_QC', 'temp', 'PUV_bispec_hanning.mat'), 'bispec_
 
 
 %%
-for gg = 1001%:length(PUV_process)
+for gg = 1:length(PUV_process)
     clearvars -except PUV PUV_process boundwave gg data_dir bispec_var
     gg
     tic
