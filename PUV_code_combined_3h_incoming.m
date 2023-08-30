@@ -456,8 +456,8 @@ end
 % Save data
 toc
 disp('saving')
-%save(fullfile(data_dir, 'Level3_QC', 'PUV_boundwave_hanning.mat'), 'boundwave', '-v7.3')
-%save(fullfile(data_dir, 'Level3_QC', ['PUV_bispec_' char(string(gg)) '_hanning.mat']), 'bispec_var', '-v7.3')
+save(fullfile(data_dir, 'Level3_QC', 'PUV_boundwave_hanning.mat'), 'boundwave', '-v7.3')
+save(fullfile(data_dir, 'Level3_QC', ['PUV_bispec_' char(string(gg)) '_hanning.mat']), 'bispec_var', '-v7.3')
 toc
 
 
